@@ -1,0 +1,13 @@
+{
+  "model": "gpt-3.5-turbo",
+  "openai_api_key": "你的OpenAI API密钥",
+  "gemini_api_key": "你的Gemini API密钥",
+  "max_retries": 3,
+  "retry_delay": 1,
+  "session_refresh_interval": 3,
+  "additional_checks": [
+    "检查用词准确性和专业性",
+    "检查逻辑连贯性",
+    "检查句式多样性"
+  ]
+}
