@@ -166,11 +166,11 @@ Excel文件包含以下列：
 
 **成本优先：**
 - OpenAI: `gpt-3.5-turbo`
-- Gemini: `gemini-pro`
+- Gemini: `gemini/gemini-pro`
 
 **质量优先：**
 - OpenAI: `gpt-4o` 或 `gpt-4-turbo`
-- Gemini: `gemini-1.5-pro`
+- Gemini: `gemini/gemini-1.5-pro`
 
 ### 2. 额外检查要求示例
 

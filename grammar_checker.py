@@ -45,7 +45,7 @@ class GrammarChecker:
         if not os.path.exists(config_path):
             # 创建默认配置文件
             default_config = {
-                "model": "gpt-3.5-turbo",  # 或 "gemini-pro"
+                "model": "gpt-3.5-turbo",  # 或 "gemini/gemini-pro"
                 "max_retries": 3,
                 "retry_delay": 1,
                 "session_refresh_interval": 3,
