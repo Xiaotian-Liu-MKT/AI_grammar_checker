@@ -1,68 +1,72 @@
-# AI语法检查器 - 完整使用指南
+# AI Grammar Checker - Complete Guide
 
-## 🎯 项目概述
+[中文说明](README_Chinese.md)
 
-这是一个现代化的AI语法检查器，支持读取Word文档，使用OpenAI或Gemini API进行语法检查，并将结果保存为Excel文件。项目提供了原生的 PyQt6 桌面应用版本。
+## 🎯 Project Overview
 
-## 📁 项目结构
+This is a modern AI grammar checker that reads Word documents, uses OpenAI or Gemini APIs for grammar checks, and saves the results as Excel files. The project includes a native PyQt6 desktop application.
+
+## 📁 Project Structure
 
 ```
-ai-grammar-checker/
-├── desktop_app.py          # PyQt6桌面应用主程序
-├── requirements.txt        # 依赖文件
-├── config.json            # 配置文件（自动生成）
-└── README.md              # 本说明文件
+AI_grammar_checker/
+├── desktop_app.py          # PyQt6 desktop application
+├── requirements.txt        # Dependency file
+├── config.json             # Auto-generated configuration
+└── README.md               # This documentation
 ```
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-1. **安装依赖**
+1. **Install dependencies**
+
    ```bash
    pip install -r requirements.txt
    ```
 
-2. **运行桌面应用**
+2. **Run the desktop application**
+
    ```bash
    python desktop_app.py
    ```
 
-## ⚙️ 配置设置
+## ⚙️ Configuration
 
-### API密钥配置
+### API Key Setup
 
-建议使用环境变量或系统密钥管理器保存API密钥：
+Use environment variables or a system key manager to store API keys:
 
-**OpenAI API密钥：**
-1. 访问 [OpenAI Platform](https://platform.openai.com/api-keys)
-2. 创建新的API密钥
-3. 设置环境变量 `OPENAI_API_KEY`
+**OpenAI API Key:**
+1. Visit [OpenAI Platform](https://platform.openai.com/api-keys)
+2. Create an API key
+3. Set the environment variable `OPENAI_API_KEY`
 
-**Gemini API密钥：**
-1. 访问 [Google AI Studio](https://makersuite.google.com/app/apikey)
-2. 获取API密钥
-3. 设置环境变量 `GEMINI_API_KEY`
+**Gemini API Key:**
+1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Obtain the API key
+3. Set the environment variable `GEMINI_API_KEY`
 
-**示例：**
+**Example:**
 ```bash
 # Linux/macOS
-export OPENAI_API_KEY="你的OpenAI密钥"
-export GEMINI_API_KEY="你的Gemini密钥"
+export OPENAI_API_KEY="your OpenAI key"
+export GEMINI_API_KEY="your Gemini key"
 
 # Windows PowerShell
-setx OPENAI_API_KEY "你的OpenAI密钥"
-setx GEMINI_API_KEY "你的Gemini密钥"
+setx OPENAI_API_KEY "your OpenAI key"
+setx GEMINI_API_KEY "your Gemini key"
 ```
-程序将在运行时自动从环境变量读取密钥。`config.json` 不再保存实际密钥，如需本地保存，请自行加密或使用系统密钥管理器。
+The application reads the keys from environment variables at runtime. `config.json` no longer stores actual keys; encrypt them locally if needed.
 
-### 配置文件说明
+### Configuration File
 
-程序会自动生成 `config.json` 文件，包含以下设置：
+The program generates a `config.json` file with the following settings:
 
 ```json
 {
   "provider": "openai",
   "model": "gpt-3.5-turbo",
-  "language": "中文",
+  "language": "Chinese",
   "max_retries": 3,
   "retry_delay": 1,
   "session_refresh_interval": 3,
@@ -70,200 +74,172 @@ setx GEMINI_API_KEY "你的Gemini密钥"
 }
 ```
 
-## 📱 界面功能详解
+## 📱 Interface Overview
 
-### 桌面应用 (PyQt6)
+### Desktop Application (PyQt6)
 
-**主要特性：**
-- 🖥️ 原生桌面体验
-- ⚡ 后台多线程处理
-- 🎛️ 丰富的控件选择
-- 💾 本地配置管理
+**Main Features:**
+- 🖥️ Native desktop experience
+- ⚡ Background multithreading
+- 🎛️ Rich widget selection
+- 💾 Local configuration management
 
-**界面布局：**
+**Layout:**
+1. **Left Configuration Panel**
+   - API settings
+   - Model settings
+   - Language settings
+   - Advanced settings
+   - Configuration management
 
-1. **左侧配置面板**
-   - API设置组
-   - 模型设置组
-   - 语言设置组
-   - 高级设置组
-   - 配置管理组
+2. **Right Operation Panel**
+   - File selection and preview
+   - Output path configuration
+   - Extra check management
+   - Progress display
+   - Start processing button
 
-2. **右侧操作面板**
-   - 文件选择和预览
-   - 输出路径设置
-   - 额外检查管理
-   - 进度显示
-   - 开始处理按钮
+### 🌐 Interface Language Switching
+- Switch languages in the **Language Settings** group
+- Supports **Chinese** and **English**; selection is saved to `config.json`
 
-### 🌐 界面语言切换
+## 🔧 Feature Details
 
-- 在左侧的 **语言设置组** 中可即时切换界面语言；
-- 当前支持 **中文** 与 **英文**，选择会保存到 `config.json`，下次启动时自动应用。
+### 1. Document Processing
+- Supports `.docx` Word documents
+- Automatically splits text into paragraphs
+- Skips empty paragraphs
+- Shows document preview and statistics
 
-## 🔧 功能详解
+### 2. AI Grammar Check
+- Supports OpenAI GPT series models
+- Supports Google Gemini series models
+- Bilingual support (Chinese & English)
+- Customizable prompt templates
 
-### 1. 文档处理
-- 支持 `.docx` 格式的Word文档
-- 自动按段落分割文本
-- 跳过空段落
-- 显示文档预览和统计信息
+### 3. Session Management
+- Restarts AI sessions after N paragraphs
+- Avoids degradation from overly long context
+- Configurable session refresh interval
 
-### 2. AI语法检查
-- 支持OpenAI GPT系列模型
-- 支持Google Gemini系列模型
-- 中英文双语支持
-- 自定义提示词模板
+## 🎛️ Advanced Settings
 
-### 3. 会话管理
-- 每N段自动重新开始AI会话
-- 避免上下文过长影响质量
-- 可配置会话刷新间隔
+### Performance Optimization
+- **Max retries** for failed API calls
+- **Retry delay** in seconds
+- **Session refresh interval**
 
-### 4. 额外检查功能
-- 支持自定义检查要求
-- 例如：用词准确性、逻辑连贯性、句式多样性
-- 每个检查要求单独成列
+### Cost Control
+- Choose economical models (e.g., `gpt-3.5-turbo`)
+- Limit the number of extra checks
+- Adjust session refresh interval
 
-### 5. 结果输出
-- 结构化Excel文件输出
-- 第一列：原始文本
-- 第二列：语法检查结果
-- 后续列：额外检查结果
-- 支持下载和本地保存
+### Quality Optimization
+- Use advanced models (e.g., GPT-4)
+- Refine extra check requirements
+- Adjust prompt templates
 
-## 📊 输出文件格式
+## 🔍 Usage Tips
 
-Excel文件包含以下列：
+### 1. Model Selection Recommendations
 
-| 列名 | 内容 | 示例 |
-|------|------|------|
-| 原始文本 | Word文档中的原始段落 | "这是一个测试段落。" |
-| 语法检查 | AI的语法检查意见 | "语法正确" 或 "建议修改..." |
-| 额外检查_1 | 第一个额外检查结果 | "用词准确，表达清晰" |
-| 额外检查_2 | 第二个额外检查结果 | "逻辑连贯，结构合理" |
-
-## 🎛️ 高级设置
-
-### 性能优化
-- **最大重试次数**：API调用失败时的重试次数
-- **重试延迟**：重试间隔时间（秒）
-- **会话刷新间隔**：多少段后重新开始AI会话
-
-### 成本控制
-- 选择合适的模型（GPT-3.5-turbo成本较低）
-- 控制额外检查的数量
-- 合理设置会话刷新间隔
-
-### 质量优化
-- 使用更高级的模型（GPT-4）
-- 细化额外检查要求
-- 调整提示词模板
-
-## 🔍 使用技巧
-
-### 1. 模型选择建议
-
-**成本优先：**
+**Cost priority:**
 - OpenAI: `gpt-3.5-turbo`
 - Gemini: `gemini-pro`
 
-**质量优先：**
-- OpenAI: `gpt-4o` 或 `gpt-4-turbo`
+**Quality priority:**
+- OpenAI: `gpt-4o` or `gpt-4-turbo`
 - Gemini: `gemini-1.5-pro`
 
-### 2. 额外检查要求示例
+### 2. Extra Check Examples
 
-**学术写作：**
-- "检查学术用词的准确性和专业性"
-- "检查论证逻辑的严密性"
-- "检查引用格式的规范性"
+**Academic writing:**
+- "Check the accuracy and professionalism of terminology"
+- "Check the rigor of logical arguments"
+- "Check citation format compliance"
 
-**商务文档：**
-- "检查商务用语的恰当性"
-- "检查表达的正式程度"
-- "检查信息的完整性"
+**Business documents:**
+- "Check the appropriateness of business terms"
+- "Check formality of expression"
+- "Check completeness of information"
 
-**创意写作：**
-- "检查语言的生动性和感染力"
-- "检查句式的多样性"
-- "检查修辞手法的运用"
+**Creative writing:**
+- "Check the vividness and impact of language"
+- "Check variety of sentence structures"
+- "Check usage of rhetorical devices"
 
-### 3. 性能优化建议
+### 3. Performance Optimization Tips
 
-**处理大文档：**
-- 适当增加会话刷新间隔（如5-10段）
-- 减少额外检查要求的数量
-- 选择响应速度快的模型
+**Processing large documents:**
+- Increase session refresh interval (e.g., 5-10 paragraphs)
+- Reduce the number of extra checks
+- Choose faster models
 
-**提高准确性：**
-- 使用高级模型
-- 减少会话刷新间隔（如2-3段）
-- 细化检查要求的描述
+**Improving accuracy:**
+- Use advanced models
+- Decrease session refresh interval (e.g., 2-3 paragraphs)
+- Provide detailed extra check descriptions
 
-## ⚠️ 注意事项
+## ⚠️ Notes
 
-### 安全提醒
-1. **API密钥安全**：不要在公共场所或不安全的环境中输入API密钥
-2. **数据隐私**：上传的文档内容会发送给AI服务商
-3. **配置文件**：默认不再保存API密钥，如需本地保存请自行加密或使用系统密钥管理器
+### Security
+1. **API key safety:** Do not input API keys in public or insecure environments
+2. **Data privacy:** Uploaded document content is sent to AI providers
+3. **Configuration:** API keys are not stored in `config.json`; encrypt locally if needed
 
-### 成本控制
-1. **API计费**：每次调用AI API都会产生费用
-2. **监控使用量**：建议在AI服务商控制台设置使用限额
-3. **测试建议**：先用小文档测试，确认效果后再处理大文档
+### Cost Control
+1. **API billing:** Each API call incurs cost
+2. **Usage monitoring:** Set usage limits in provider dashboards
+3. **Testing advice:** Start with small documents
 
-### 技术限制
-1. **文档格式**：仅支持.docx格式
-2. **网络要求**：需要稳定的网络连接
-3. **处理时间**：大文档处理时间较长，请耐心等待
+### Technical Limitations
+1. **Document format:** Only `.docx` is supported
+2. **Network requirement:** Needs a stable connection
+3. **Processing time:** Large documents take longer
 
-## 🆘 常见问题
+## 🆘 FAQ
 
-### Q: API调用失败怎么办？
-**A:** 检查以下几点：
-- API密钥是否正确
-- 网络连接是否正常
-- API配额是否充足
-- 模型名称是否正确
+### Q: What if API calls fail?
+**A:** Check the following:
+- API key correctness
+- Network connection
+- API quota
+- Model name
 
-### Q: 处理速度很慢怎么办？
-**A:** 可以尝试：
-- 选择响应更快的模型
-- 减少额外检查要求
-- 增加会话刷新间隔
-- 检查网络连接
+### Q: Processing is slow
+**A:** Try:
+- Choosing faster models
+- Reducing extra checks
+- Increasing session refresh interval
+- Checking network connectivity
 
-### Q: 如何批量处理多个文档？
-**A:** 目前界面版本支持单文档处理，如需批量处理，可以：
-- 多次使用界面逐个处理
-- 使用原始的命令行脚本版本
-- 联系开发者获取批量处理脚本
+### Q: How to batch process multiple documents?
+**A:** The GUI supports single documents. To batch process:
+- Use the command-line script
+- Run the GUI repeatedly
+- Contact the developer for batch scripts
 
-### Q: 支持其他语言吗？
-**A:** 当前版本支持中文和英文，如需其他语言支持，可以：
-- 修改提示词模板
-- 在配置中自定义语言设置
-- 联系开发者添加新语言支持
+### Q: Are other languages supported?
+**A:** Currently supports Chinese and English. For more languages:
+- Modify prompt templates
+- Customize language settings
+- Contact the developer for contributions
 
-## 📞 技术支持
+## 📞 Technical Support
+If you encounter issues:
+1. Check this document
+2. View error messages
+3. Verify configuration
+4. Check network connection
 
-如果遇到问题或需要帮助：
-
-1. **检查本文档**：大部分问题都能在此找到答案
-2. **查看错误信息**：记录具体的错误消息
-3. **检查配置**：确认API密钥和设置正确
-4. **网络检查**：确保能正常访问AI服务
-
-## 📈 未来计划
-
-- [ ] 支持更多文档格式（PDF、TXT等）
-- [ ] 添加更多AI服务商支持
-- [ ] 实现批量处理功能
-- [ ] 增加结果统计和分析
-- [ ] 优化处理速度和用户体验
-- [ ] 添加多语言界面支持
+## 📈 Future Plans
+- [ ] Support more document formats (PDF, TXT, etc.)
+- [ ] Add support for more AI providers
+- [ ] Implement batch processing
+- [ ] Add result statistics and analysis
+- [ ] Optimize processing speed and user experience
+- [ ] Add multi-language interface support
 
 ---
 
-**开始使用AI语法检查器，让AI助力您的写作！** 🚀
+**Start using the AI Grammar Checker and let AI boost your writing!** 🚀
