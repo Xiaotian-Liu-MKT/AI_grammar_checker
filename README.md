@@ -13,32 +13,12 @@
 ai-grammar-checker/
 ├── app.py                  # Streamlit Web界面主程序
 ├── desktop_app.py          # PyQt6桌面应用主程序
-├── start_app.py            # 自动启动脚本
 ├── requirements.txt        # 依赖文件
 ├── config.json            # 配置文件（自动生成）
 └── README.md              # 本说明文件
 ```
 
 ## 🚀 快速开始
-
-### 方法一：一键启动（推荐）
-
-1. **下载项目文件**
-   ```bash
-   # 确保所有文件在同一目录下
-   ```
-
-2. **运行启动脚本**
-   ```bash
-   python start_app.py
-   ```
-   
-   启动脚本会自动：
-   - 检查Python版本
-   - 安装所需依赖
-   - 启动Web界面
-
-### 方法二：手动安装
 
 1. **安装依赖**
    ```bash
