@@ -361,9 +361,9 @@ class MainWindow(QMainWindow):
         self.model_combo.clear()
         
         if provider == "openai":
-            models = ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4", "gpt-3.5-turbo"]
+            models = ["gpt-5-nano", "gpt-5-mini", "gpt-5", "gpt-4o", "gpt-4o-mini"]
         elif provider == "gemini":
-            models = ["gemini-pro", "gemini-pro-vision", "gemini-1.5-pro", "gemini-1.5-flash"]
+            models = ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash", "gemini-2.0-flash-lite"]
         
         self.model_combo.addItems(models)
     
