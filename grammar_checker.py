@@ -153,6 +153,9 @@ class GrammarChecker:
             if provider == "gemini"
             else self.config.get("openai_api_key")
         )
+        if not api_key:
+            print(f"错误：缺少{provider.upper()} API密钥")
+            return
         cfg = {
             "language": "中文",
             "provider": provider,

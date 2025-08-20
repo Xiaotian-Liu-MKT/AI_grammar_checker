@@ -124,6 +124,10 @@ class StreamlitGrammarChecker:
     
     def process_paragraphs(self, paragraphs: List[str], config: Dict) -> pd.DataFrame:
         """处理段落并返回结果DataFrame"""
+        if not config.get("api_key"):
+            st.error("缺少API密钥")
+            return pd.DataFrame()
+
         progress_bar = st.progress(0)
         status_text = st.empty()
 

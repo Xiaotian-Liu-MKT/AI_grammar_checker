@@ -50,6 +50,9 @@ Please provide concise evaluation and suggestions in English:
 
 def call_ai_api(prompt: str, provider: str, model: str, api_key: str, *, max_retries: int = 3, retry_delay: float = 1.0) -> str:
     """Call AI API via litellm with retry logic."""
+    if not api_key:
+        raise ValueError("API密钥不能为空")
+
     for attempt in range(max_retries):
         try:
             if provider == "openai":
