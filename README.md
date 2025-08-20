@@ -61,17 +61,29 @@ ai-grammar-checker/
 
 ### API密钥配置
 
-需要获取AI服务的API密钥：
+建议使用环境变量或系统密钥管理器保存API密钥：
 
 **OpenAI API密钥：**
 1. 访问 [OpenAI Platform](https://platform.openai.com/api-keys)
 2. 创建新的API密钥
-3. 复制密钥到配置中
+3. 设置环境变量 `OPENAI_API_KEY`
 
 **Gemini API密钥：**
 1. 访问 [Google AI Studio](https://makersuite.google.com/app/apikey)
 2. 获取API密钥
-3. 复制密钥到配置中
+3. 设置环境变量 `GEMINI_API_KEY`
+
+**示例：**
+```bash
+# Linux/macOS
+export OPENAI_API_KEY="你的OpenAI密钥"
+export GEMINI_API_KEY="你的Gemini密钥"
+
+# Windows PowerShell
+setx OPENAI_API_KEY "你的OpenAI密钥"
+setx GEMINI_API_KEY "你的Gemini密钥"
+```
+程序将在运行时自动从环境变量读取密钥。`config.json` 不再保存实际密钥，如需本地保存，请自行加密或使用系统密钥管理器。
 
 ### 配置文件说明
 
@@ -79,8 +91,6 @@ ai-grammar-checker/
 
 ```json
 {
-  "openai_api_key": "你的OpenAI密钥",
-  "gemini_api_key": "你的Gemini密钥",
   "provider": "openai",
   "model": "gpt-3.5-turbo",
   "language": "中文",
@@ -250,7 +260,7 @@ Excel文件包含以下列：
 ### 安全提醒
 1. **API密钥安全**：不要在公共场所或不安全的环境中输入API密钥
 2. **数据隐私**：上传的文档内容会发送给AI服务商
-3. **配置文件**：本地保存的配置文件包含API密钥，注意保护
+3. **配置文件**：默认不再保存API密钥，如需本地保存请自行加密或使用系统密钥管理器
 
 ### 成本控制
 1. **API计费**：每次调用AI API都会产生费用

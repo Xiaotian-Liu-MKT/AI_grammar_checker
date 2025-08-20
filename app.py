@@ -44,8 +44,6 @@ class StreamlitGrammarChecker:
         if not self.session_initialized:
             # 默认配置
             default_config = {
-                "openai_api_key": "",
-                "gemini_api_key": "",
                 "max_retries": 3,
                 "retry_delay": 1,
                 "session_refresh_interval": 3,
@@ -56,6 +54,11 @@ class StreamlitGrammarChecker:
                 if key not in st.session_state:
                     st.session_state[key] = value
             
+            if "openai_api_key" not in st.session_state:
+                st.session_state.openai_api_key = os.getenv("OPENAI_API_KEY", "")
+            if "gemini_api_key" not in st.session_state:
+                st.session_state.gemini_api_key = os.getenv("GEMINI_API_KEY", "")
+
             # 其他会话状态
             if "language" not in st.session_state:
                 st.session_state.language = "中文"
@@ -243,8 +246,6 @@ def main():
         st.subheader("💾 配置管理")
         if st.button("保存配置到文件"):
             config_data = {
-                "openai_api_key": st.session_state.openai_api_key,
-                "gemini_api_key": st.session_state.gemini_api_key,
                 "provider": st.session_state.provider,
                 "model": st.session_state.model,
                 "language": st.session_state.language,
@@ -263,6 +264,8 @@ def main():
             try:
                 config_data = json.load(uploaded_config)
                 for key, value in config_data.items():
+                    if key in ["openai_api_key", "gemini_api_key"]:
+                        continue
                     if key in st.session_state:
                         st.session_state[key] = value
                 st.success("配置文件加载成功！")
@@ -338,13 +341,14 @@ def main():
             st.error("请先上传Word文档")
             return
         
-        api_key = (st.session_state.openai_api_key if st.session_state.provider == "openai" 
-                  else st.session_state.gemini_api_key)
-        
+        api_key = (os.getenv("OPENAI_API_KEY") if st.session_state.provider == "openai"
+                  else os.getenv("GEMINI_API_KEY"))
         if not api_key:
-            st.error(f"请先输入{st.session_state.provider.upper()} API密钥")
+            api_key = (st.session_state.openai_api_key if st.session_state.provider == "openai"
+                      else st.session_state.gemini_api_key)
+        if not api_key:
+            st.error(f"请先设置{st.session_state.provider.upper()} API密钥")
             return
-        
         # 读取文档
         paragraphs = checker.read_word_document(uploaded_file)
         if not paragraphs:

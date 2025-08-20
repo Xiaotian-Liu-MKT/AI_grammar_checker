@@ -46,8 +46,6 @@ class GrammarChecker:
             # 创建默认配置文件
             default_config = {
                 "model": "gpt-3.5-turbo",  # 或 "gemini-pro"
-                "openai_api_key": "",
-                "gemini_api_key": "",
                 "max_retries": 3,
                 "retry_delay": 1,
                 "session_refresh_interval": 3,
@@ -148,13 +146,11 @@ class GrammarChecker:
         
         # 处理段落
         provider = "gemini" if "gemini" in self.config["model"].lower() else "openai"
-        api_key = (
-            self.config.get("gemini_api_key")
-            if provider == "gemini"
-            else self.config.get("openai_api_key")
-        )
+        api_key = os.getenv("GEMINI_API_KEY") if provider == "gemini" else os.getenv("OPENAI_API_KEY")
         if not api_key:
-            print(f"错误：缺少{provider.upper()} API密钥")
+            api_key = (self.config.get("gemini_api_key") if provider == "gemini" else self.config.get("openai_api_key"))
+        if not api_key:
+            print(f"错误：缺少{provider.upper()} API密钥，请设置环境变量。")
             return
         cfg = {
             "language": "中文",
