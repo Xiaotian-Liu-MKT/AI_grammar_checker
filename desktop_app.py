@@ -46,6 +46,10 @@ class ProcessingThread(QThread):
     def run(self):
         """运行处理任务"""
         try:
+            if not self.config.get("api_key"):
+                self.error_occurred.emit("API密钥不能为空")
+                return
+
             def callback(i: int, total: int, message: str):
                 progress = int((i + 1) / total * 100)
                 self.progress_updated.emit(progress, message)
