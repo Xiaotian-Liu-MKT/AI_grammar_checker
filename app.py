@@ -10,17 +10,18 @@ import os
 import time
 import tempfile
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List, Dict
 import pandas as pd
 
 try:
     from docx import Document
-    import litellm
     from io import BytesIO
 except ImportError as e:
     st.error(f"缺少必要的库: {e}")
     st.info("请运行: pip install python-docx litellm streamlit")
     st.stop()
+
+from utils.checker_core import process_paragraphs as core_process_paragraphs
 
 # 页面配置
 st.set_page_config(
@@ -121,112 +122,18 @@ class StreamlitGrammarChecker:
             st.error(f"读取Word文档时出错: {e}")
             return []
     
-    def create_prompts(self, text: str, language: str, check_type: str = "grammar", 
-                      custom_requirement: str = "") -> str:
-        """创建AI提示词"""
-        if language == "中文":
-            if check_type == "grammar":
-                return f"""请检查以下文本的语法错误，只需要指出语法问题并给出简洁的修改建议：
-
-文本：{text}
-
-请用中文回答，格式如下：
-- 如果没有语法错误，回答"语法正确"
-- 如果有语法错误，简洁地指出问题和建议
-"""
-            else:
-                return f"""请对以下文本进行检查：{custom_requirement}
-
-文本：{text}
-
-请用中文给出简洁的评价和建议：
-"""
-        else:  # 英文
-            if check_type == "grammar":
-                return f"""Please check the following text for grammar errors and provide concise suggestions:
-
-Text: {text}
-
-Please respond in English:
-- If there are no grammar errors, respond "Grammar is correct"
-- If there are grammar errors, briefly point out the issues and suggestions
-"""
-            else:
-                return f"""Please check the following text for: {custom_requirement}
-
-Text: {text}
-
-Please provide concise evaluation and suggestions in English:
-"""
-    
-    def call_ai_api(self, prompt: str, provider: str, model: str, api_key: str) -> str:
-        """调用AI API"""
-        try:
-            # 设置API密钥
-            if provider == "openai":
-                litellm.openai_key = api_key
-            elif provider == "gemini":
-                litellm.gemini_key = api_key
-            
-            response = litellm.completion(
-                model=model,
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=500,
-                temperature=0.3
-            )
-            return response.choices[0].message.content.strip()
-            
-        except Exception as e:
-            return f"API调用失败: {str(e)}"
-    
     def process_paragraphs(self, paragraphs: List[str], config: Dict) -> pd.DataFrame:
         """处理段落并返回结果DataFrame"""
-        results = []
         progress_bar = st.progress(0)
         status_text = st.empty()
-        
-        language = config["language"]
-        provider = config["provider"]
-        model = config["model"]
-        api_key = config["api_key"]
-        additional_checks = config["additional_checks"]
-        session_interval = config["session_refresh_interval"]
-        
-        for i, paragraph in enumerate(paragraphs):
-            # 更新进度
-            progress = (i + 1) / len(paragraphs)
-            progress_bar.progress(progress)
-            status_text.text(f"处理第 {i+1}/{len(paragraphs)} 段...")
-            
-            # 检查是否需要刷新会话
-            if i > 0 and i % session_interval == 0:
-                status_text.text(f"刷新AI会话... 第 {i+1}/{len(paragraphs)} 段")
-                time.sleep(1)
-            
-            result_row = {"原始文本": paragraph}
-            
-            # 语法检查
-            grammar_prompt = self.create_prompts(paragraph, language, "grammar")
-            grammar_result = self.call_ai_api(grammar_prompt, provider, model, api_key)
-            result_row["语法检查"] = grammar_result
-            
-            # 额外检查
-            for j, check_requirement in enumerate(additional_checks):
-                if check_requirement.strip():
-                    additional_prompt = self.create_prompts(
-                        paragraph, language, "additional", check_requirement
-                    )
-                    additional_result = self.call_ai_api(
-                        additional_prompt, provider, model, api_key
-                    )
-                    result_row[f"额外检查_{j+1}"] = additional_result
-            
-            results.append(result_row)
-            time.sleep(0.5)  # 避免API限流
-        
+
+        def callback(i: int, total: int, message: str):
+            progress_bar.progress((i + 1) / total)
+            status_text.text(message)
+
+        results = core_process_paragraphs(paragraphs, config, progress_callback=callback)
         progress_bar.progress(1.0)
         status_text.text("处理完成！")
-        
         return pd.DataFrame(results)
 
 

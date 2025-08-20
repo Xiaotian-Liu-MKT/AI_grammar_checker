@@ -10,7 +10,7 @@ import os
 import time
 import tempfile
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List, Dict
 import pandas as pd
 
 try:
@@ -24,11 +24,12 @@ try:
     from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer
     from PyQt6.QtGui import QFont, QIcon, QPixmap
     from docx import Document
-    import litellm
 except ImportError as e:
     print(f"缺少必要的库: {e}")
     print("请运行: pip install PyQt6 python-docx litellm pandas openpyxl")
     sys.exit(1)
+
+from utils.checker_core import process_paragraphs as core_process_paragraphs
 
 
 class ProcessingThread(QThread):
@@ -36,113 +37,24 @@ class ProcessingThread(QThread):
     progress_updated = pyqtSignal(int, str)
     processing_finished = pyqtSignal(pd.DataFrame)
     error_occurred = pyqtSignal(str)
-    
+
     def __init__(self, paragraphs, config):
         super().__init__()
         self.paragraphs = paragraphs
         self.config = config
-    
-    def create_prompts(self, text: str, language: str, check_type: str = "grammar", 
-                      custom_requirement: str = "") -> str:
-        """创建AI提示词"""
-        if language == "中文":
-            if check_type == "grammar":
-                return f"""请检查以下文本的语法错误，只需要指出语法问题并给出简洁的修改建议：
 
-文本：{text}
-
-请用中文回答，格式如下：
-- 如果没有语法错误，回答"语法正确"
-- 如果有语法错误，简洁地指出问题和建议
-"""
-            else:
-                return f"""请对以下文本进行检查：{custom_requirement}
-
-文本：{text}
-
-请用中文给出简洁的评价和建议：
-"""
-        else:  # 英文
-            if check_type == "grammar":
-                return f"""Please check the following text for grammar errors and provide concise suggestions:
-
-Text: {text}
-
-Please respond in English:
-- If there are no grammar errors, respond "Grammar is correct"
-- If there are grammar errors, briefly point out the issues and suggestions
-"""
-            else:
-                return f"""Please check the following text for: {custom_requirement}
-
-Text: {text}
-
-Please provide concise evaluation and suggestions in English:
-"""
-    
-    def call_ai_api(self, prompt: str) -> str:
-        """调用AI API"""
-        try:
-            provider = self.config["provider"]
-            api_key = self.config["api_key"]
-            
-            if provider == "openai":
-                litellm.openai_key = api_key
-            elif provider == "gemini":
-                litellm.gemini_key = api_key
-            
-            response = litellm.completion(
-                model=self.config["model"],
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=500,
-                temperature=0.3
-            )
-            return response.choices[0].message.content.strip()
-            
-        except Exception as e:
-            return f"API调用失败: {str(e)}"
-    
     def run(self):
         """运行处理任务"""
         try:
-            results = []
-            total = len(self.paragraphs)
-            
-            for i, paragraph in enumerate(self.paragraphs):
-                # 更新进度
+            def callback(i: int, total: int, message: str):
                 progress = int((i + 1) / total * 100)
-                self.progress_updated.emit(progress, f"处理第 {i+1}/{total} 段...")
-                
-                # 检查是否需要刷新会话
-                if i > 0 and i % self.config["session_refresh_interval"] == 0:
-                    self.progress_updated.emit(progress, f"刷新AI会话... 第 {i+1}/{total} 段")
-                    time.sleep(1)
-                
-                result_row = {"原始文本": paragraph}
-                
-                # 语法检查
-                grammar_prompt = self.create_prompts(
-                    paragraph, self.config["language"], "grammar"
-                )
-                grammar_result = self.call_ai_api(grammar_prompt)
-                result_row["语法检查"] = grammar_result
-                
-                # 额外检查
-                for j, check_requirement in enumerate(self.config["additional_checks"]):
-                    if check_requirement.strip():
-                        additional_prompt = self.create_prompts(
-                            paragraph, self.config["language"], "additional", check_requirement
-                        )
-                        additional_result = self.call_ai_api(additional_prompt)
-                        result_row[f"额外检查_{j+1}"] = additional_result
-                
-                results.append(result_row)
-                time.sleep(0.5)  # 避免API限流
-            
-            # 处理完成
+                self.progress_updated.emit(progress, message)
+
+            results = core_process_paragraphs(
+                self.paragraphs, self.config, progress_callback=callback
+            )
             df = pd.DataFrame(results)
             self.processing_finished.emit(df)
-            
         except Exception as e:
             self.error_occurred.emit(str(e))
 
