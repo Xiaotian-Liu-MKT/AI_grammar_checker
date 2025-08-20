@@ -350,7 +350,7 @@ class MainWindow(QMainWindow):
         self.start_btn.clicked.connect(self.start_processing)
         layout.addWidget(self.start_btn)
 
-        credit_label = QLabel("Vibe coded by Xiaotian Liu, PhD Candidate @ The University of Queensland")
+        credit_label = QLabel("By Xiaotian Liu, PhD Candidate @ The University of Queensland")
         credit_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(credit_label)
 
