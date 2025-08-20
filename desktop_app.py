@@ -363,8 +363,6 @@ class MainWindow(QMainWindow):
     def save_config(self):
         """保存配置"""
         config = {
-            "openai_api_key": self.openai_key_input.text(),
-            "gemini_api_key": self.gemini_key_input.text(),
             "provider": self.provider_combo.currentText(),
             "model": self.model_combo.currentText(),
             "language": "中文" if self.chinese_radio.isChecked() else "English",
@@ -388,8 +386,8 @@ class MainWindow(QMainWindow):
                 with open("config.json", "r", encoding="utf-8") as f:
                     config = json.load(f)
                 
-                self.openai_key_input.setText(config.get("openai_api_key", ""))
-                self.gemini_key_input.setText(config.get("gemini_api_key", ""))
+                self.openai_key_input.setText(os.getenv("OPENAI_API_KEY", config.get("openai_api_key", "")))
+                self.gemini_key_input.setText(os.getenv("GEMINI_API_KEY", config.get("gemini_api_key", "")))
                 
                 provider = config.get("provider", "openai")
                 self.provider_combo.setCurrentText(provider)
@@ -435,15 +433,17 @@ class MainWindow(QMainWindow):
         if not self.current_paragraphs:
             QMessageBox.warning(self, "警告", "请先选择Word文档")
             return
-        
+
         provider = self.provider_combo.currentText()
-        api_key = (self.openai_key_input.text() if provider == "openai" 
-                  else self.gemini_key_input.text())
-        
+        api_key = (os.getenv("OPENAI_API_KEY") if provider == "openai"
+                  else os.getenv("GEMINI_API_KEY"))
+        if not api_key:
+            api_key = (self.openai_key_input.text() if provider == "openai"
+                      else self.gemini_key_input.text())
         if not api_key:
             QMessageBox.warning(self, "警告", f"请输入{provider.upper()} API密钥")
             return
-        
+
         # 准备配置
         config = {
             "provider": provider,
