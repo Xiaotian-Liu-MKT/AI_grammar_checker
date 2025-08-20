@@ -6,10 +6,11 @@ Word文档AI语法检查脚本
 
 import os
 import json
-import time
 import argparse
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict
 from pathlib import Path
+
+from utils.checker_core import process_paragraphs as core_process_paragraphs
 
 
 class ConfigFileNotFoundError(Exception):
@@ -22,7 +23,6 @@ class ConfigFileNotFoundError(Exception):
 try:
     from docx import Document
     import pandas as pd
-    import litellm
     from tqdm import tqdm
 except ImportError as e:
     print(f"缺少必要的库: {e}")
@@ -39,14 +39,6 @@ class GrammarChecker:
             config_path: 配置文件路径
         """
         self.config = self.load_config(config_path)
-        self.session_count = 0
-        self.paragraph_count = 0
-        
-        # 设置litellm
-        if self.config.get("openai_api_key"):
-            litellm.openai_key = self.config["openai_api_key"]
-        if self.config.get("gemini_api_key"):
-            litellm.gemini_key = self.config["gemini_api_key"]
     
     def load_config(self, config_path: str) -> Dict:
         """加载配置文件"""
@@ -96,110 +88,6 @@ class GrammarChecker:
             print(f"读取Word文档时出错: {e}")
             return []
     
-    def create_grammar_prompt(self, text: str) -> str:
-        """创建语法检查的提示词"""
-        return f"""请检查以下文本的语法错误，只需要指出语法问题并给出简洁的修改建议：
-
-文本：{text}
-
-请用中文回答，格式如下：
-- 如果没有语法错误，回答"语法正确"
-- 如果有语法错误，简洁地指出问题和建议
-"""
-    
-    def create_additional_check_prompt(self, text: str, check_requirement: str) -> str:
-        """创建额外检查的提示词"""
-        return f"""请对以下文本进行检查：{check_requirement}
-
-文本：{text}
-
-请用中文给出简洁的评价和建议：
-"""
-    
-    def call_ai_api(self, prompt: str, max_retries: int = None) -> str:
-        """
-        调用AI API
-        
-        Args:
-            prompt: 提示词
-            max_retries: 最大重试次数
-            
-        Returns:
-            AI的回复
-        """
-        max_retries = max_retries or self.config.get("max_retries", 3)
-        
-        for attempt in range(max_retries):
-            try:
-                response = litellm.completion(
-                    model=self.config["model"],
-                    messages=[{"role": "user", "content": prompt}],
-                    max_tokens=500,
-                    temperature=0.3
-                )
-                return response.choices[0].message.content.strip()
-                
-            except Exception as e:
-                print(f"API调用失败 (尝试 {attempt + 1}/{max_retries}): {e}")
-                if attempt < max_retries - 1:
-                    time.sleep(self.config.get("retry_delay", 1))
-                else:
-                    return f"API调用失败: {str(e)}"
-    
-    def should_refresh_session(self) -> bool:
-        """判断是否需要刷新会话"""
-        return self.paragraph_count % self.config.get("session_refresh_interval", 3) == 0
-    
-    def process_paragraphs(self, paragraphs: List[str], 
-                          additional_checks: List[str] = None) -> List[Dict]:
-        """
-        处理所有段落
-        
-        Args:
-            paragraphs: 段落列表
-            additional_checks: 额外检查要求列表
-            
-        Returns:
-            处理结果列表
-        """
-        results = []
-        additional_checks = additional_checks or self.config.get("additional_checks", [])
-        
-        print(f"开始处理 {len(paragraphs)} 个段落...")
-        if additional_checks:
-            print(f"额外检查要求: {additional_checks}")
-        
-        for i, paragraph in enumerate(tqdm(paragraphs, desc="处理进度")):
-            self.paragraph_count += 1
-            
-            # 检查是否需要刷新会话
-            if self.should_refresh_session():
-                self.session_count += 1
-                print(f"\n刷新AI会话 (第 {self.session_count} 次)")
-            
-            result = {
-                "original_text": paragraph,
-                "grammar_check": "",
-                "additional_checks": {}
-            }
-            
-            # 语法检查
-            grammar_prompt = self.create_grammar_prompt(paragraph)
-            grammar_result = self.call_ai_api(grammar_prompt)
-            result["grammar_check"] = grammar_result
-            
-            # 额外检查
-            for check_name in additional_checks:
-                additional_prompt = self.create_additional_check_prompt(paragraph, check_name)
-                additional_result = self.call_ai_api(additional_prompt)
-                result["additional_checks"][check_name] = additional_result
-            
-            results.append(result)
-            
-            # 简短延迟避免API限流
-            time.sleep(0.5)
-        
-        return results
     
     def save_to_excel(self, results: List[Dict], output_path: str):
         """
@@ -259,14 +147,36 @@ class GrammarChecker:
             return
         
         # 处理段落
-        results = self.process_paragraphs(paragraphs, additional_checks)
-        
+        provider = "gemini" if "gemini" in self.config["model"].lower() else "openai"
+        api_key = (
+            self.config.get("gemini_api_key")
+            if provider == "gemini"
+            else self.config.get("openai_api_key")
+        )
+        cfg = {
+            "language": "中文",
+            "provider": provider,
+            "model": self.config["model"],
+            "api_key": api_key,
+            "additional_checks": additional_checks or self.config.get("additional_checks", []),
+            "session_refresh_interval": self.config.get("session_refresh_interval", 3),
+            "max_retries": self.config.get("max_retries", 3),
+            "retry_delay": self.config.get("retry_delay", 1),
+        }
+
+        with tqdm(total=len(paragraphs), desc="处理进度") as pbar:
+            def callback(i, total, message):
+                pbar.update(1)
+            results = core_process_paragraphs(paragraphs, cfg, progress_callback=callback)
+
         # 保存结果
         self.save_to_excel(results, str(output_file))
-        
+
+        session_interval = cfg["session_refresh_interval"]
+        total_sessions = len(paragraphs) // session_interval + 1
         print(f"\n=== 处理完成 ===")
         print(f"总段落数: {len(paragraphs)}")
-        print(f"AI会话次数: {self.session_count + 1}")
+        print(f"AI会话次数: {total_sessions}")
         print(f"结果文件: {output_file}")
 
 
