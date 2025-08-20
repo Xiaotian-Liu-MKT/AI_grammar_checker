@@ -30,6 +30,7 @@ except ImportError as e:
     sys.exit(1)
 
 from utils.checker_core import process_paragraphs as core_process_paragraphs
+from i18n import get_text
 
 
 class ProcessingThread(QThread):
@@ -47,7 +48,8 @@ class ProcessingThread(QThread):
         """运行处理任务"""
         try:
             if not self.config.get("api_key"):
-                self.error_occurred.emit("API密钥不能为空")
+                lang = 'zh' if self.config.get('language', '中文') == '中文' else 'en'
+                self.error_occurred.emit(get_text('API密钥不能为空', lang))
                 return
 
             def callback(i: int, total: int, message: str):
@@ -65,17 +67,45 @@ class ProcessingThread(QThread):
 
 class MainWindow(QMainWindow):
     """主窗口"""
-    
+
     def __init__(self):
         super().__init__()
         self.current_paragraphs = []
+        self.current_file = None
         self.processing_thread = None
+        self.current_language = 'zh'
+        self.translatable_widgets = []
         self.init_ui()
         self.load_config()
+
+    def tr(self, text: str) -> str:
+        return get_text(text, self.current_language)
+
+    def add_translatable(self, widget, text: str, attr: str = 'setText'):
+        self.translatable_widgets.append((widget, text, attr))
+        getattr(widget, attr)(self.tr(text))
+
+    def apply_language(self, button=None, checked=False):
+        self.current_language = 'zh' if self.chinese_radio.isChecked() else 'en'
+        self.retranslate_ui()
+
+    def retranslate_ui(self):
+        self.setWindowTitle(self.tr('AI语法检查器'))
+        for widget, text, attr in self.translatable_widgets:
+            getattr(widget, attr)(self.tr(text))
+        if self.current_file is None:
+            self.file_label.setText(self.tr('未选择文件'))
+        if not self.current_paragraphs:
+            self.preview_text.setPlaceholderText(self.tr('文档预览将在这里显示...'))
+        default_cn = get_text('语法检查结果.xlsx', 'zh')
+        default_en = get_text('语法检查结果.xlsx', 'en')
+        current_name = Path(self.output_path_input.text()).name
+        if current_name in (default_cn, default_en):
+            self.output_path_input.setText(str(Path.home() / self.tr('语法检查结果.xlsx')))
     
     def init_ui(self):
         """初始化界面"""
-        self.setWindowTitle("AI语法检查器")
+        self.setWindowTitle(self.tr("AI语法检查器"))
         self.setGeometry(100, 100, 1200, 800)
         
         # 创建中央部件
@@ -106,7 +136,8 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(widget)
         
         # 标题
-        title = QLabel("⚙️ 配置设置")
+        title = QLabel()
+        self.add_translatable(title, "⚙️ 配置设置")
         title.setFont(QFont("Arial", 14, QFont.Weight.Bold))
         layout.addWidget(title)
         
@@ -116,80 +147,104 @@ class MainWindow(QMainWindow):
         scroll_layout = QVBoxLayout(scroll_content)
         
         # API设置组
-        api_group = QGroupBox("🔑 API设置")
+        api_group = QGroupBox()
+        self.add_translatable(api_group, "🔑 API设置", "setTitle")
         api_layout = QFormLayout(api_group)
-        
+
         self.openai_key_input = QLineEdit()
         self.openai_key_input.setEchoMode(QLineEdit.EchoMode.Password)
-        api_layout.addRow("OpenAI API Key:", self.openai_key_input)
-        
+        openai_label = QLabel()
+        self.add_translatable(openai_label, "OpenAI API Key:")
+        api_layout.addRow(openai_label, self.openai_key_input)
+
         self.gemini_key_input = QLineEdit()
         self.gemini_key_input.setEchoMode(QLineEdit.EchoMode.Password)
-        api_layout.addRow("Gemini API Key:", self.gemini_key_input)
+        gemini_label = QLabel()
+        self.add_translatable(gemini_label, "Gemini API Key:")
+        api_layout.addRow(gemini_label, self.gemini_key_input)
         
         scroll_layout.addWidget(api_group)
         
         # 模型设置组
-        model_group = QGroupBox("🤖 模型设置")
+        model_group = QGroupBox()
+        self.add_translatable(model_group, "🤖 模型设置", "setTitle")
         model_layout = QFormLayout(model_group)
         
         self.provider_combo = QComboBox()
         self.provider_combo.addItems(["openai", "gemini"])
         self.provider_combo.currentTextChanged.connect(self.on_provider_changed)
-        model_layout.addRow("AI供应商:", self.provider_combo)
-        
+        provider_label = QLabel()
+        self.add_translatable(provider_label, "AI供应商:")
+        model_layout.addRow(provider_label, self.provider_combo)
+
         self.model_combo = QComboBox()
-        model_layout.addRow("模型:", self.model_combo)
+        model_label = QLabel()
+        self.add_translatable(model_label, "模型:")
+        model_layout.addRow(model_label, self.model_combo)
         
         scroll_layout.addWidget(model_group)
         
         # 语言设置组
-        language_group = QGroupBox("🌐 语言设置")
+        language_group = QGroupBox()
+        self.add_translatable(language_group, "🌐 语言设置", "setTitle")
         language_layout = QVBoxLayout(language_group)
         
         self.language_group = QButtonGroup()
-        self.chinese_radio = QRadioButton("中文")
-        self.english_radio = QRadioButton("English")
+        self.chinese_radio = QRadioButton()
+        self.add_translatable(self.chinese_radio, "中文")
+        self.english_radio = QRadioButton()
+        self.add_translatable(self.english_radio, "English")
         self.chinese_radio.setChecked(True)
-        
+
         self.language_group.addButton(self.chinese_radio, 0)
         self.language_group.addButton(self.english_radio, 1)
+        self.language_group.buttonToggled.connect(self.apply_language)
         
         language_layout.addWidget(self.chinese_radio)
         language_layout.addWidget(self.english_radio)
         scroll_layout.addWidget(language_group)
         
         # 高级设置组
-        advanced_group = QGroupBox("🔧 高级设置")
+        advanced_group = QGroupBox()
+        self.add_translatable(advanced_group, "🔧 高级设置", "setTitle")
         advanced_layout = QFormLayout(advanced_group)
         
         self.max_retries_spin = QSpinBox()
         self.max_retries_spin.setRange(1, 10)
         self.max_retries_spin.setValue(3)
-        advanced_layout.addRow("最大重试次数:", self.max_retries_spin)
+        retries_label = QLabel()
+        self.add_translatable(retries_label, "最大重试次数:")
+        advanced_layout.addRow(retries_label, self.max_retries_spin)
         
         self.retry_delay_spin = QDoubleSpinBox()
         self.retry_delay_spin.setRange(0.1, 10.0)
         self.retry_delay_spin.setValue(1.0)
         self.retry_delay_spin.setSingleStep(0.1)
-        advanced_layout.addRow("重试延迟(秒):", self.retry_delay_spin)
+        retry_label = QLabel()
+        self.add_translatable(retry_label, "重试延迟(秒):")
+        advanced_layout.addRow(retry_label, self.retry_delay_spin)
         
         self.session_interval_spin = QSpinBox()
         self.session_interval_spin.setRange(1, 20)
         self.session_interval_spin.setValue(3)
-        advanced_layout.addRow("会话刷新间隔:", self.session_interval_spin)
+        session_label = QLabel()
+        self.add_translatable(session_label, "会话刷新间隔:")
+        advanced_layout.addRow(session_label, self.session_interval_spin)
         
         scroll_layout.addWidget(advanced_group)
         
         # 配置文件操作
-        config_group = QGroupBox("💾 配置管理")
+        config_group = QGroupBox()
+        self.add_translatable(config_group, "💾 配置管理", "setTitle")
         config_layout = QVBoxLayout(config_group)
-        
-        save_config_btn = QPushButton("保存配置")
+
+        save_config_btn = QPushButton()
+        self.add_translatable(save_config_btn, "保存配置")
         save_config_btn.clicked.connect(self.save_config)
         config_layout.addWidget(save_config_btn)
-        
-        load_config_btn = QPushButton("加载配置")
+
+        load_config_btn = QPushButton()
+        self.add_translatable(load_config_btn, "加载配置")
         load_config_btn.clicked.connect(self.load_config_file)
         config_layout.addWidget(load_config_btn)
         
@@ -207,15 +262,17 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(widget)
         
         # 文件上传区域
-        file_group = QGroupBox("📁 文件操作")
+        file_group = QGroupBox()
+        self.add_translatable(file_group, "📁 文件操作", "setTitle")
         file_layout = QVBoxLayout(file_group)
         
         file_btn_layout = QHBoxLayout()
-        self.select_file_btn = QPushButton("选择Word文档")
+        self.select_file_btn = QPushButton()
+        self.add_translatable(self.select_file_btn, "选择Word文档")
         self.select_file_btn.clicked.connect(self.select_word_file)
         file_btn_layout.addWidget(self.select_file_btn)
-        
-        self.file_label = QLabel("未选择文件")
+
+        self.file_label = QLabel(self.tr("未选择文件"))
         file_btn_layout.addWidget(self.file_label)
         file_btn_layout.addStretch()
         
@@ -224,37 +281,43 @@ class MainWindow(QMainWindow):
         # 文档预览
         self.preview_text = QTextEdit()
         self.preview_text.setMaximumHeight(150)
-        self.preview_text.setPlaceholderText("文档预览将在这里显示...")
+        self.add_translatable(self.preview_text, "文档预览将在这里显示...", "setPlaceholderText")
         file_layout.addWidget(self.preview_text)
         
         layout.addWidget(file_group)
         
         # 输出设置
-        output_group = QGroupBox("📊 输出设置")
+        output_group = QGroupBox()
+        self.add_translatable(output_group, "📊 输出设置", "setTitle")
         output_layout = QFormLayout(output_group)
         
         output_btn_layout = QHBoxLayout()
         self.output_path_input = QLineEdit()
-        self.output_path_input.setText(str(Path.home() / "语法检查结果.xlsx"))
+        self.output_path_input.setText(str(Path.home() / self.tr("语法检查结果.xlsx")))
         output_btn_layout.addWidget(self.output_path_input)
         
-        browse_btn = QPushButton("浏览")
+        browse_btn = QPushButton()
+        self.add_translatable(browse_btn, "浏览")
         browse_btn.clicked.connect(self.browse_output_path)
         output_btn_layout.addWidget(browse_btn)
-        
-        output_layout.addRow("Excel输出路径:", output_btn_layout)
+
+        excel_label = QLabel()
+        self.add_translatable(excel_label, "Excel输出路径:")
+        output_layout.addRow(excel_label, output_btn_layout)
         layout.addWidget(output_group)
         
         # 额外检查要求
-        checks_group = QGroupBox("✅ 额外检查要求")
+        checks_group = QGroupBox()
+        self.add_translatable(checks_group, "✅ 额外检查要求", "setTitle")
         checks_layout = QVBoxLayout(checks_group)
         
         add_check_layout = QHBoxLayout()
         self.new_check_input = QLineEdit()
-        self.new_check_input.setPlaceholderText("输入新的检查要求...")
+        self.add_translatable(self.new_check_input, "输入新的检查要求...", "setPlaceholderText")
         add_check_layout.addWidget(self.new_check_input)
-        
-        add_check_btn = QPushButton("添加")
+
+        add_check_btn = QPushButton()
+        self.add_translatable(add_check_btn, "添加")
         add_check_btn.clicked.connect(self.add_check_requirement)
         add_check_layout.addWidget(add_check_btn)
         
@@ -263,7 +326,8 @@ class MainWindow(QMainWindow):
         self.checks_list = QListWidget()
         checks_layout.addWidget(self.checks_list)
         
-        remove_check_btn = QPushButton("删除选中项")
+        remove_check_btn = QPushButton()
+        self.add_translatable(remove_check_btn, "删除选中项")
         remove_check_btn.clicked.connect(self.remove_check_requirement)
         checks_layout.addWidget(remove_check_btn)
         
@@ -279,7 +343,8 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.status_label)
         
         # 开始按钮
-        self.start_btn = QPushButton("🚀 开始语法检查")
+        self.start_btn = QPushButton()
+        self.add_translatable(self.start_btn, "🚀 开始语法检查")
         self.start_btn.setMinimumHeight(50)
         self.start_btn.setFont(QFont("Arial", 12, QFont.Weight.Bold))
         self.start_btn.clicked.connect(self.start_processing)
@@ -301,7 +366,7 @@ class MainWindow(QMainWindow):
     def select_word_file(self):
         """选择Word文件"""
         file_path, _ = QFileDialog.getOpenFileName(
-            self, "选择Word文档", "", "Word文档 (*.docx)"
+            self, self.tr("选择Word文档"), "", "Word文档 (*.docx)"
         )
         
         if file_path:
@@ -322,19 +387,19 @@ class MainWindow(QMainWindow):
             self.current_paragraphs = paragraphs
             
             # 显示预览
-            preview_text = f"文档包含 {len(paragraphs)} 个段落\n\n"
+            preview_text = self.tr("文档包含 {} 个段落\n\n").format(len(paragraphs))
             for i, para in enumerate(paragraphs[:3]):
-                preview_text += f"段落 {i+1}: {para[:100]}...\n\n"
-            
+                preview_text += self.tr("段落 {}: {}...\n\n").format(i + 1, para[:100])
+
             self.preview_text.setText(preview_text)
-            
+
         except Exception as e:
-            QMessageBox.critical(self, "错误", f"读取Word文档失败: {e}")
+            QMessageBox.critical(self, self.tr("错误"), self.tr("读取Word文档失败: {}").format(e))
     
     def browse_output_path(self):
         """浏览输出路径"""
         file_path, _ = QFileDialog.getSaveFileName(
-            self, "保存Excel文件", "", "Excel文件 (*.xlsx)"
+            self, self.tr("保存Excel文件"), "", "Excel文件 (*.xlsx)"
         )
         
         if file_path:
@@ -375,9 +440,9 @@ class MainWindow(QMainWindow):
         try:
             with open("config.json", "w", encoding="utf-8") as f:
                 json.dump(config, f, indent=2, ensure_ascii=False)
-            QMessageBox.information(self, "成功", "配置已保存到 config.json")
+            QMessageBox.information(self, self.tr("成功"), self.tr("配置已保存到 config.json"))
         except Exception as e:
-            QMessageBox.critical(self, "错误", f"保存配置失败: {e}")
+            QMessageBox.critical(self, self.tr("错误"), self.tr("保存配置失败: {}").format(e))
     
     def load_config(self):
         """加载配置"""
@@ -400,6 +465,7 @@ class MainWindow(QMainWindow):
                     self.chinese_radio.setChecked(True)
                 else:
                     self.english_radio.setChecked(True)
+                self.apply_language()
                 
                 self.max_retries_spin.setValue(config.get("max_retries", 3))
                 self.retry_delay_spin.setValue(config.get("retry_delay", 1.0))
@@ -415,7 +481,7 @@ class MainWindow(QMainWindow):
     def load_config_file(self):
         """从文件加载配置"""
         file_path, _ = QFileDialog.getOpenFileName(
-            self, "选择配置文件", "", "JSON文件 (*.json)"
+            self, self.tr("选择配置文件"), "", "JSON文件 (*.json)"
         )
         
         if file_path:
@@ -423,15 +489,15 @@ class MainWindow(QMainWindow):
                 with open(file_path, "r", encoding="utf-8") as f:
                     config = json.load(f)
                 # 这里可以复用load_config的逻辑
-                QMessageBox.information(self, "成功", "配置文件加载成功")
+                QMessageBox.information(self, self.tr("成功"), self.tr("配置文件加载成功"))
             except Exception as e:
-                QMessageBox.critical(self, "错误", f"加载配置文件失败: {e}")
+                QMessageBox.critical(self, self.tr("错误"), self.tr("加载配置文件失败: {}").format(e))
     
     def start_processing(self):
         """开始处理"""
         # 验证输入
         if not self.current_paragraphs:
-            QMessageBox.warning(self, "警告", "请先选择Word文档")
+            QMessageBox.warning(self, self.tr("警告"), self.tr("请先选择Word文档"))
             return
 
         provider = self.provider_combo.currentText()
@@ -441,7 +507,7 @@ class MainWindow(QMainWindow):
             api_key = (self.openai_key_input.text() if provider == "openai"
                       else self.gemini_key_input.text())
         if not api_key:
-            QMessageBox.warning(self, "警告", f"请输入{provider.upper()} API密钥")
+            QMessageBox.warning(self, self.tr("警告"), self.tr("请输入{} API密钥").format(provider.upper()))
             return
 
         # 准备配置
@@ -479,12 +545,15 @@ class MainWindow(QMainWindow):
             result_df.to_excel(output_path, index=False, engine='openpyxl')
             
             QMessageBox.information(
-                self, "完成", 
-                f"语法检查完成！\n结果已保存到: {output_path}\n共处理 {len(result_df)} 个段落"
+                self,
+                self.tr("完成"),
+                self.tr("语法检查完成！\n结果已保存到: {}\n共处理 {} 个段落").format(
+                    output_path, len(result_df)
+                ),
             )
             
         except Exception as e:
-            QMessageBox.critical(self, "错误", f"保存Excel文件失败: {e}")
+            QMessageBox.critical(self, self.tr("错误"), self.tr("保存Excel文件失败: {}").format(e))
         
         finally:
             # 重置界面
@@ -494,7 +563,7 @@ class MainWindow(QMainWindow):
     
     def on_processing_error(self, error_message):
         """处理错误"""
-        QMessageBox.critical(self, "错误", f"处理过程中出现错误: {error_message}")
+        QMessageBox.critical(self, self.tr("错误"), self.tr("处理过程中出现错误: {}").format(error_message))
         
         # 重置界面
         self.start_btn.setEnabled(True)
