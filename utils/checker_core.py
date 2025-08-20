@@ -19,7 +19,7 @@ def create_prompt(text: str, language: str = "中文", check_type: str = "gramma
 文本：{text}
 
 请用中文回答，格式如下：
-- 如果没有语法错误，回答\"语法正确\"
+- 如果没有语法错误，请仅回答\"语法正确\"
 - 如果有语法错误，简洁地指出问题和建议
 """
         else:
@@ -36,7 +36,7 @@ def create_prompt(text: str, language: str = "中文", check_type: str = "gramma
 Text: {text}
 
 Please respond in English:
-- If there are no grammar errors, respond \"Grammar is correct\"
+- If there are no grammar errors, please only respond \"Grammar is correct\"
 - If there are grammar errors, briefly point out the issues and suggestions
 """
         else:
