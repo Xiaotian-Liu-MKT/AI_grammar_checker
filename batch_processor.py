@@ -7,7 +7,7 @@
 import os
 import glob
 from pathlib import Path
-from grammar_checker import GrammarChecker
+from grammar_checker import GrammarChecker, ConfigFileNotFoundError
 
 
 def batch_process_documents(input_folder: str, output_folder: str = None, 
@@ -45,7 +45,12 @@ def batch_process_documents(input_folder: str, output_folder: str = None,
     print(f"找到 {len(word_files)} 个文档需要处理")
     
     # 初始化检查器
-    checker = GrammarChecker()
+    try:
+        checker = GrammarChecker()
+    except ConfigFileNotFoundError as e:
+        print(e)
+        print("使用默认配置继续运行。")
+        checker = GrammarChecker()
     
     # 处理每个文档
     for i, word_file in enumerate(word_files, 1):

@@ -11,6 +11,14 @@ import argparse
 from typing import List, Dict, Optional, Tuple
 from pathlib import Path
 
+
+class ConfigFileNotFoundError(Exception):
+    """在配置文件缺失时抛出的异常"""
+
+    def __init__(self, message: str, config: Dict):
+        super().__init__(message)
+        self.config = config
+
 try:
     from docx import Document
     import pandas as pd
@@ -55,10 +63,10 @@ class GrammarChecker:
             }
             with open(config_path, 'w', encoding='utf-8') as f:
                 json.dump(default_config, f, indent=2, ensure_ascii=False)
-            print(f"已创建默认配置文件: {config_path}")
-            print("请填写您的API密钥后重新运行")
-            exit(1)
-        
+            raise ConfigFileNotFoundError(
+                f"已创建默认配置文件: {config_path}", default_config
+            )
+
         with open(config_path, 'r', encoding='utf-8') as f:
             return json.load(f)
     
@@ -278,7 +286,12 @@ def main():
         return
     
     # 创建检查器并运行
-    checker = GrammarChecker(args.config)
+    try:
+        checker = GrammarChecker(args.config)
+    except ConfigFileNotFoundError as e:
+        print(e)
+        print("使用默认配置继续运行。")
+        checker = GrammarChecker(args.config)
     checker.run(
         word_file=args.word_file,
         output_file=args.output,
