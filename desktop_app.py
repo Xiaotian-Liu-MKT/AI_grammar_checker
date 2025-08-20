@@ -349,7 +349,11 @@ class MainWindow(QMainWindow):
         self.start_btn.setFont(QFont("Arial", 12, QFont.Weight.Bold))
         self.start_btn.clicked.connect(self.start_processing)
         layout.addWidget(self.start_btn)
-        
+
+        credit_label = QLabel("Vibe coded with Claude and CodeX")
+        credit_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(credit_label)
+
         return widget
     
     def on_provider_changed(self, provider):
