@@ -145,11 +145,11 @@ The program generates a `config.json` file with the following settings:
 
 **Cost priority:**
 - OpenAI: `gpt-3.5-turbo`
-- Gemini: `gemini-pro`
+- Gemini: `gemini/gemini-pro`
 
 **Quality priority:**
 - OpenAI: `gpt-4o` or `gpt-4-turbo`
-- Gemini: `gemini-1.5-pro`
+- Gemini: `gemini/gemini-1.5-pro`
 
 ### 2. Extra Check Examples
 

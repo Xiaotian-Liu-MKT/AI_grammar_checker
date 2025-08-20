@@ -53,17 +53,18 @@ def call_ai_api(prompt: str, provider: str, model: str, api_key: str, *, max_ret
     if not api_key:
         raise ValueError("API密钥不能为空")
 
+    # Ensure Gemini models use the "gemini/" prefix required by LiteLLM
+    if provider == "gemini" and not model.startswith("gemini/"):
+        model = f"gemini/{model}"
+
     for attempt in range(max_retries):
         try:
-            if provider == "openai":
-                litellm.openai_key = api_key
-            elif provider == "gemini":
-                litellm.gemini_key = api_key
             response = litellm.completion(
                 model=model,
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=500,
                 temperature=0.3,
+                api_key=api_key,
             )
             return response.choices[0].message.content.strip()
         except Exception as e:
