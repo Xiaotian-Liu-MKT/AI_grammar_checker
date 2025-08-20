@@ -4,8 +4,9 @@
   "retry_delay": 1,
   "session_refresh_interval": 3,
   "additional_checks": [
-    "检查用词准确性和专业性",
-    "检查逻辑连贯性",
-    "检查句式多样性"
+    "Add any additional requirements here",
+    "This will create a separate column in the Excel output",
+    "Just type in the way how you communication with ChatGPT normally.",
+    "Please remove these sentences when you run your own script."
   ]
 }
